@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; background: #f3f4f6; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; }
+
+        .controls { margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; }
+        select, button { padding: 0.5rem; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #ddd; padding: 0.8rem; text-align: left; }
+        th { background: #f9fafb; cursor: pointer; }
+        th:hover { background: #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Transaction Reports</h1>
+
+        <div class="controls">
+            <button onclick="fetchData()">Refresh Data</button>
+            <span>Sort by click on headers</span>
+        </div>
+
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('id')">ID</th>
+                    <th onclick="sortTable('date')">Date</th>
+                    <th onclick="sortTable('items')">Total Items</th>
+                    <th onclick="sortTable('amount')">Total Amount</th>
+                    <th>Payment</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let transactions = [];
+        let sortDir = 1;
+
+        function fetchData() {
+            fetch('/transactions')
+                .then(res => res.json())
+                .then(data => {
+                    transactions = data;
+                    renderTable();
+                });
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#reportTable tbody');
+            tbody.innerHTML = '';
+
+            transactions.forEach(t => {
+                const itemCount = t.items.reduce((sum, i) => sum + i.quantity, 0);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${t.id}</td>
+                    <td>${new Date(t.created_at).toLocaleString()}</td>
+                    <td>${itemCount}</td>
+                    <td>Rp ${t.total_amount.toLocaleString('id-ID')}</td>
+                    <td>${t.payment_method}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function sortTable(key) {
+            sortDir *= -1; // Toggle direction
+
+            transactions.sort((a, b) => {
+                let valA, valB;
+
+                if (key === 'id') {
+                    valA = a.id;
+                    valB = b.id;
+                } else if (key === 'date') {
+                    valA = new Date(a.created_at);
+                    valB = new Date(b.created_at);
+                } else if (key === 'amount') {
+                    valA = a.total_amount;
+                    valB = b.total_amount;
+                } else if (key === 'items') {
+                    valA = a.items.reduce((s, i) => s + i.quantity, 0);
+                    valB = b.items.reduce((s, i) => s + i.quantity, 0);
+                }
+
+                if (valA < valB) return -1 * sortDir;
+                if (valA > valB) return 1 * sortDir;
+                return 0;
+            });
+
+            renderTable();
+        }
+
+        // Init
+        fetchData();
+    </script>
+</body>
+</html>
