@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
 import json
+import os
 
 from . import models, database, schemas, crud
 
@@ -13,6 +14,9 @@ models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
 
 # Mount Static & Templates
+if not os.path.exists("app/static"):
+    os.makedirs("app/static")
+
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
